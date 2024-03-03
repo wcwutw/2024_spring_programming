@@ -29,6 +29,7 @@ check() {
 
 	for arg in "${@: -2}"; do
 		if [ ! -e "$arg" ]; then
+			#echo "$arg"
 			#echo "<file A> or <file B> not found in the directory"
 			print_help
 			exit 1
@@ -160,11 +161,11 @@ cmp_file() {
 	if [[ $result == *"Binary files"* ]]; then 
 		x=100
 	else
-		local a=$(echo "$diff_output" | grep -cE "^\-")
-		local b=$(echo "$diff_output" | grep -cE "^\+")
-		# local c=$(echo "$diff_output" | grep -cE "^ ")
+		local a=$(echo "$diff_output" | grep -c "^-" )
+		local b=$(echo "$diff_output" | grep -c "^+" )
+		# local c=$(echo "$diff_output" | egrep -c "^ ")
 		#local tota=$(wc -l < "$1");
-		local tota=$(grep -a '^' "$1" | wc -l)
+		local tota=$(grep -a "^" "$1" | wc -l)
 		#echo $diff_output
 		#echo "$a:$b:$c"
 		local c=$((tota-a))
