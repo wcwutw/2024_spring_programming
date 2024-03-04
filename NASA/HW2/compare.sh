@@ -1,5 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #set -x
+export LC_ALL="en_US.UTF-8"
 
 print_help() {
 	echo "usage: ./compare.sh [OPTION] <PATH A> <PATH B>"
@@ -15,6 +16,7 @@ ropt=false
 aopt=false
 nopt=false
 lopt=false
+fe=true
 exp=""
 path_a=""
 path_b=""
@@ -29,7 +31,6 @@ check() {
 
 	for arg in "${@: -2}"; do
 		if [ ! -e "$arg" ]; then
-			#echo "$arg"
 			#echo "<file A> or <file B> not found in the directory"
 			print_help
 			exit 1
@@ -108,66 +109,47 @@ check() {
 		print_help
 		exit 1
 	fi
-	#echo "accepted"
 }
 
-cmp_sym() {
-	if [[ "$lopt" == "true" ]]; then
-		if [[ -L "$1" ]]; then
-			tar1=$(readlink "$1")
+check_exist() {
+	fe=true
+	if [[ -h "$1" && "$lopt" == "false" ]]; then
+		fe=false
+	fi
+	if echo "$2" | grep -qE '/\.[^/]*'; then
+		if [[ "$aopt" == "false" ]]; then
+			fe=false
 		fi
-		if [[ -L "$2" ]]; then
-			tar2=$(readlink "$2")
-		fi
-		if [[ ( ! -L "$1" ) || ( ! -L "$2" ) || "$tar1" != "$tar2" ]]; then
-			echo "changed 100%"
-		else
-			echo "changed 0%"
-		fi
-	else
-		if [[ -L "$1" ]]; then
-			if [[ -L "$2" ]]; then
-				echo "changed 0%"
-			else
-				echo "create" # $2
-			fi
-		elif [[ -L "$2" ]]; then
-			echo "delete"	# $1
-		fi
+	fi
+	if [[ ! -e "$1" ]]; then
+		fe=false
+	fi
+	if [[ -d "$1" && ( ! -h "$1" ) ]]; then
+		fe=false
+	fi
+	if [[ ! "$2" =~ "$exp" ]] && [[ "$nopt" == "true" ]]; then
+		fe=false
 	fi
 }
 
 cmp_file() {
-	if [[ "$lopt" == "true" ]]; then
-		if [[  -L "$1" || -L "$2" ]]; then
-			local result=$(cmp_sym "$1" "$2")
-			if [[ $result != "changed 0%" ]]; then
-				if [[ "$result" == "delete" ]]; then
-					echo "$1 delete"
-				elif [[ "$result" == "create" ]]; then
-					echo "$2 create"
-				else
-					echo "$result"
-				fi
-			fi
-			return
-		fi
-	fi
-
-	local diffo_output=$(diff -d "$1" "$2")
-	local diff_output=$(diff -d -u "$1" "$2" | grep -vE '^(---|\+\+\+|@@)' 2>&1)
+	local diffo_output=$(diff -d --no-dereference "$1" "$2")
+	local diff_output=$(diff -d -u --no-dereference "$1" "$2" | grep -vE '^(---|\+\+\+|@@)' 2>&1)
 	local result=$(echo "$diffo_output")
 	local x
-	if [[ $result == *"Binary files"* ]]; then 
+	if [[ ! -n "$result" ]]; then
+		return
+	fi
+	#echo "$result"
+	if [[ $result == *"Binary files"* || $result == *"二元碼檔"* || $result == *"symbolic link"* || $result == *"Symbolic link"* || $result == *"符號連結"* ]]; then 
 		x=100
 	else
 		local a=$(echo "$diff_output" | grep -c "^-" )
 		local b=$(echo "$diff_output" | grep -c "^+" )
-		# local c=$(echo "$diff_output" | egrep -c "^ ")
+		#local c=$(echo "$diff_output" | egrep -c "^ ")
 		#local tota=$(wc -l < "$1");
 		local tota=$(grep -a "^" "$1" | wc -l)
 		#echo $diff_output
-		#echo "$a:$b:$c"
 		local c=$((tota-a))
 		local max=$((b > a ? b : a))
 		if [[ $max == 0 && $c == 0 ]]; then
@@ -182,101 +164,53 @@ cmp_file() {
 
 cmp_dir() {
 	declare -a file_status=()
-
-	if [[ "$lopt" == "true" ]]; then
-		local symlinks=$(find "$1"/* -type l)
-		for symlink1 in $symlinks; do
-			#echo "$(basename "${symlink1#$1/}"): "$exp" "
-			if [[ ( "$(basename "${symlink1#$1/}")" =~ "$exp" && "$nopt" == "true" ) || ( "$nopt" == "false" ) ]]; then
-				if [ -L "$symlink1" ]; then
-					symlink2="$2/$(basename "$symlink1")"
-					#echo "$symlink1:$symlink2"
-					if [[ -e "$symlink2" ]]; then
-						local result=$(cmp_sym "$symlink1" "$symlink2")
-						if [[ $result != "changed 0%" ]]; then
-							local now=$(basename "$symlink1");
-							local now2=$(basename "$symlink2");
-
-							if [[ "$result" == "delete" ]]; then
-								file_status+=("$now delete")
-							elif [[ "$result" == "create" ]]; then
-								file_status+=("$now2 create")
-							else
-								file_status+=("$now: $result")
-							fi
-						fi
-					else 
-						file_status+=("${symlink1#$1/} delete");
-					fi
-				fi
-			fi
-		done
-		symlinks=$(find "$2"/* -type l)
-		for symlink2 in $symlinks; do
-			if [[ ( "$(basename "${symlink2#$2/}")" =~ "$exp" && "$nopt" == "true" ) || ( "$nopt" == "false" ) ]]; then
-				if [ -L "$symlink2" ]; then
-					symlink1="$1/$(basename "$symlink2")"
-					if [[ ! -e "$symlink1" ]]; then
-						file_status+=("${symlink2#$2/} create")
-					fi
-				fi
-			fi
-		done
-	fi
-
-	while IFS= read -r -d '' file1; do
-		rel_path="${file1#$1/}"
-		file2="$2/$rel_path"
-		path_to_file="$(dirname $file1)"
-		if [[ "./$rel_path" == *"/."* ]]; then
-			areal="true" #hidden
-		else
-			areal="false" #not hidden
-		fi
-		# echo "---" $rel_path
-#		while [[ "$path_to_file" != "/" ]]; do
-#			if [[ "$(basename "$path_to_file")" == .* ]]; then
-#				areal="true"
-#				break
-#			fi
-#			path_to_file="$(dirname "$path_to_file")"
-#		done
-		# echo "$areal: $file1 / "$(basename "${file1#$1/}")""
-		if [[ ( ( "$aopt" == "false" && "$areal" == "false") || ( "$aopt" == "true" ) ) && ( ( "$(basename "${file1#$1/}")" =~ "$exp" && "$nopt" == "true" ) || ( "$nopt" == "false" ) ) ]]; then
-			if [[ -L "$file1" || -L "$file2" ]]; then
-				local result=$(cmp_sym "$file1" "$file2")
-				if [[ $result != "changed 0%" ]]; then
-					if [[ "$result" == "delete" ]]; then
-						file_status+=("$rel_path delete")
-					elif [[ "$result" == "create" ]]; then
-						rel_path2="${file2#$1/}"
-						file_status+=("$rel_path2 create")
-					else
-						file_status+=("$rel_path: $result")
-					fi
-				fi
-			elif [[ ! -e "$file2" || "$(basename "${file2#$2/}")" == .* || -L "$file2" ]]; then
-				file_status+=("$rel_path delete")
-			else
-				local result=$(cmp_file "$file1" "$file2")
-				if [[ $result != "changed 0%" ]]; then
-					file_status+=("$rel_path: $result");
-				fi
-			fi
-		fi
-	done < <(find "$1" -type f -print0)
-
-	while IFS= read -r -d '' file2; do
-		rel_path="${file2#$2/}"
-		file1="$1/$rel_path"
-		if [[ ( ( "$aopt" == "false" && "$file2" != .* ) || ( "$aopt" == "true" ) ) && ( ( "$(basename "${file1#$2/}")" =~ "$exp" && "$nopt" == "true" ) || ( "$nopt" == "false" ) ) ]]; then
-			if [[ ! -e "$file1" || "$(basename "${file1#$1/}")" == .* || -L "$file1" ]]; then
-					file_status+=("$rel_path create")
-				fi
-			fi
-	done < <(find "$2" -type f -print0)
 	
-	IFS=$'\n' sorted_status=($(printf '%s\n' "${file_status[@]}" | sort -V))
+	acom=""
+	lcom="-type f"
+	if [[ "$aopt" == "false" ]]; then
+		acom="-not -path '*/\.*'"
+	fi
+	if [[ "$lopt" == "true" ]]; then
+		lcom="\( -type f -o -type l \)"
+	fi
+	ec1="cd $1 && find ./ $lcom $acom"
+	ec2="cd $2 && find ./ $lcom $acom"
+	en1=$(eval "$ec1")
+	en2=$(eval "$ec2")
+	
+	while IFS= read -r file1; do
+		rel_path="${file1#\./}"
+		fa="$1/""$rel_path"
+		fb="$2/""$rel_path"
+		check_exist "$fb" "$rel_path"
+		if [[ ! -n $file1 || ( "$nopt" == "true" && ! $rel_path =~ "$exp" ) ]]; then
+			continue
+		fi
+		if [[ "$fe" == "true" ]]; then
+			result="$(cmp_file "$fa" "$fb")"
+			if [[ -n "$result" ]]; then
+				file_status+=("$rel_path! $result")
+			fi
+		else
+			file_status+=("$rel_path delete")
+		fi
+	done < <(echo "$en1")
+	
+	while IFS= read -r file2; do
+		rel_path="${file2#\./}"
+		fa="$1/""$rel_path"
+		fb="$2/""$rel_path"
+		check_exist "$fa" "$rel_path"
+		if [[ ! -n $file2 || ( "$nopt" == "true" && ! $rel_path =~ "$exp" ) ]]; then
+			continue
+		fi
+		if [[ "$fe" == "false" ]]; then
+			file_status+=("$rel_path create")
+		fi
+	done < <(echo "$en2")
+	
+	LC_ALL=C
+	IFS=$'\n' sorted_status=($(sort <<<"${file_status[*]}"))
 
 	for status in "${sorted_status[@]}"; do
 		case $status in
@@ -287,13 +221,26 @@ cmp_dir() {
 				echo "delete ${status% delete}"
 				;;
 			*)
-				echo "$status"
+				outp="$(echo "${status}" | sed 's/!/:/g' )"
+				echo "$outp"
 				;;
 		esac
 	done
 }
 
 check "$@"
+
+remove_slash() {
+	path="$1"
+	while [[ "${path: -1}" == '/' ]]; do
+		path="${path:0:-1}"
+	done
+}
+
+remove_slash "$path_a"
+path_a="$path"
+remove_slash "$path_b"
+path_b="$path"
 
 if [[ "$ropt" == "true" && ( -d "$path_a" && -d "$path_b") ]]; then 
 	cmp_dir "$path_a" "$path_b"
