@@ -101,7 +101,7 @@ int par[N];
 int n, m, Q, now=0;
 int u, v, ty, que3sz=0;
 ll len, sum4=0, mxq5sz=0;
-ll path2leaf[N], paredgeval[N], que3[N];
+ll path2leaf[N], paredgeval[N], que3[N], cnt[N];
 int vis[N];
 
 void enqueue(ll parent, ll son) {
@@ -138,6 +138,7 @@ int main() {
 	}
 	for(int i=0;i<=n;i++) {
 		path2leaf[i]=0;
+		cnt[i]=0;
 		vis[i]=0;
 		G[i]=create_linked_list();
 		que4[i]=create_linked_list();
@@ -188,10 +189,12 @@ int main() {
 					pop_front(que4[par[now]]);
 				}
 				sum4-=paredgeval[now];
-				if(que5->sz>0 && (vis[que5->tail->id]==1 || que5->sz==mxq5sz)) {
+				if(que5->sz>0 && (cnt[now]>0 || que5->sz==mxq5sz)) {
 					//printf("pop back: id:%lld | val:%lld\n", que5->tail->id, que5->tail->val);
 					pop_back(que5);
+					cnt[now]--;
 				}
+				cnt[par[now]]+=cnt[now];
 				now=par[now];
 				que3[--que3sz]=-1;
 				mxq5sz--; //pop back
@@ -245,15 +248,18 @@ int main() {
 					printf("value lost at %lld\n", -value-1);
 				}
 				//printf("pop front: id:%lld | val:%lld\n", que5->head->id, que5->head->val);
+				//cnt[que5->head->id]--;
 				pop_front(que5);
 				//printf("push: id:%lld | val:%lld\n", now, x);
 				push_back(que5, now, x);
+				cnt[now]++;
 				//liq5++; //pop front
 				//que5[riq5++]=x; //push back
 			}
 			else {
 				//printf("push: id:%lld | val:%lld\n", now, x);
 				push_back(que5, now, x);
+				cnt[now]++;
 				//que5sz++; //push back
 				//que5[riq5++]=x;
 			}
