@@ -1,0 +1,17 @@
+2
+6
+2
+7
+2
+value remaining is 2
+0
+1
+value remaining is 1
+4
+value lost at 0
+value remaining is 6
+1
+value lost at 0
+5
+1
+0
