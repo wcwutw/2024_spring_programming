@@ -1,0 +1,16 @@
+dn: olcDatabase={1}mdb,cn=config
+changetype: modify
+add: olcAccess
+olcAccess: {0}to dn.children="dc=nasa,dc=csie,dc=ntu" attrs=userPassword by anonymous auth by * break
+-
+add: olcAccess
+olcAccess: {1}to * by peername.ip=localhost break by peername.ip="192.168.8.1" break by * none
+-
+add: olcAccess
+olcAccess: {2}to dn.children="dc=nasa,dc=csie,dc=ntu" attrs=userPassword by self =xw
+-
+add: olcAccess
+olcAccess: {3}to dn.children="ou=people,dc=nasa,dc=csie,dc=ntu" attrs=homeDirectory,uidNumber,gidNumber by self read by * break
+-
+add: olcAccess
+olcAccess: {4}to dn.children="ou=people,dc=nasa,dc=csie,dc=ntu" by self write by * read

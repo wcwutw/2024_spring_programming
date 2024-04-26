@@ -1,0 +1,37 @@
+dn: uid=na,ou=people,dc=nasa,dc=csie,dc=ntu
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: na
+uid: na
+uidNumber: 11111
+gidNumber: 100
+homeDirectory: /home/na
+loginShell: /bin/bash
+userPassword: {SSHA}qzq7czs1xFRdnvrXbT2ciZFYcugMrB04
+
+dn: uid=sa,ou=people,dc=nasa,dc=csie,dc=ntu
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: sa
+uid: sa
+uidNumber: 22222
+gidNumber: 101
+homeDirectory: /home/sa
+loginShell: /bin/bash
+userPassword: {SSHA}qzq7czs1xFRdnvrXbT2ciZFYcugMrB04
+
+dn: cn=ta,ou=group,dc=nasa,dc=csie,dc=ntu
+objectClass: top
+objectClass: posixGroup
+gidNumber: 200
+memberuid: na
+
+dn: cn=student,ou=group,dc=nasa,dc=csie,dc=ntu
+objectClass: top
+objectClass: posixGroup
+gidNumber: 201
+memberuid: sa

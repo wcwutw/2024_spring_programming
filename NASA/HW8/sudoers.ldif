@@ -1,0 +1,19 @@
+dn: ou=sudoers,dc=nasa,dc=csie,dc=ntu
+objectClass: top
+objectClass: organizationalUnit
+
+dn: cn=ta,ou=sudoers,dc=nasa,dc=csie,dc=ntu
+objectClass: top
+objectClass: sudoRole
+cn: ta
+sudoUser: %ta
+sudoHost: ALL
+sudoCommand: ALL
+sudoOrder: 2
+
+dn: cn=defaults,ou=sudoers,dc=nasa,dc=csie,dc=ntu
+objectClass: sudoRole
+objectClass: top
+cn: defaults
+sudoOption: env_keep+=SSH_AUTH_SOCK
+sudoOrder: 1

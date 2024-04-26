@@ -1,0 +1,19 @@
+dn: dc=nasa,dc=csie,dc=ntu
+dc: nasa
+objectClass: top
+objectClass: domain
+
+dn: cn=admin,dc=nasa,dc=csie,dc=ntu
+cn: admin
+objectClass: organizationalRole
+description: administrative account
+
+dn: ou=people,dc=nasa,dc=csie,dc=ntu
+ou: people
+objectClass: organizationalUnit
+description: people
+
+dn: ou=group,dc=nasa,dc=csie,dc=ntu
+ou: group
+objectClass: organizationalUnit
+description: group

@@ -1,0 +1,10 @@
+dn: olcDatabase={1}mdb,cn=config
+changetype: modify
+replace: olcSuffix
+olcSuffix: dc=nasa,dc=csie,dc=ntu
+-
+replace: olcRootDN
+olcRootDN: cn=admin,dc=nasa,dc=csie,dc=ntu
+-
+replace: olcRootPW
+olcRootPW: {SSHA}mg8PV8aPtydOjmJALRYx2N/dZjtThl7G
