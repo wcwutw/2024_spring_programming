@@ -14,3 +14,11 @@ I worked as an intern lecturer in NTU CSIE sprout project ([project website](htt
 
 ## sprout-prac
 The [neoj](https://neoj.sprout.tw/) problems that I've done for finding suitable example problems and preparing practices for students.
+
+## ELSE
+
+Some other things I've worked on this semester.
+
+* [NTU CSIE sprout project](https://tw-csie-sprout.github.io/c2024/), mentioned above.
+* Problemsetter for [Young Turing Program](https://www.tw-ytp.org/) contest.
+* Rank 3rd on NTU CSIE Freshman ICPC (as a two member team).
